@@ -1,0 +1,88 @@
+body {
+    background-color: #0f0f0f; /* Lebih gelap dari frontend */
+    color: #e0e0e0;
+    font-family: sans-serif;
+    margin: 0; display: flex;
+}
+a { text-decoration: none; color: inherit; }
+
+/* Sidebar */
+.admin-sidebar {
+    width: 250px;
+    height: 100vh;
+    background: #1a1a1a;
+    border-right: 1px solid #333;
+    position: fixed; top: 0; left: 0;
+    display: flex; flex-direction: column;
+}
+.brand {
+    padding: 20px; font-size: 20px; font-weight: bold;
+    color: #E50914; border-bottom: 1px solid #333;
+    text-align: center;
+}
+.menu-item {
+    padding: 15px 20px; color: #aaa; border-bottom: 1px solid #222;
+    transition: 0.3s; display: block;
+}
+.menu-item:hover, .menu-item.active {
+    background: #333; color: #fff; padding-left: 25px;
+}
+
+/* Content Kanan */
+.admin-content {
+    margin-left: 250px; padding: 40px; width: 100%;
+}
+.page-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;
+}
+
+/* Forms */
+.form-group { margin-bottom: 20px; }
+label { display: block; margin-bottom: 8px; color: #888; }
+input, select, textarea {
+    width: 100%; padding: 12px; background: #222; border: 1px solid #444;
+    color: white; border-radius: 4px; box-sizing: border-box;
+}
+input:focus, textarea:focus { border-color: #E50914; outline: none; }
+.btn-save {
+    background: #E50914; color: white; padding: 12px 24px; border: none;
+    border-radius: 4px; cursor: pointer; font-weight: bold;
+}
+.btn-save:hover { background: #b20710; }
+
+/* Dashboard Cards */
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.card { background: #222; padding: 20px; border-radius: 8px; text-align: center; }
+.card h1 { font-size: 3rem; margin: 10px 0; color: #E50914; }
+
+/* --- Table Styling for Management Page --- */
+.content-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 14px;
+}
+.content-table th, .content-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #333;
+}
+.content-table th {
+    background-color: #222;
+    color: #fff;
+    text-transform: uppercase;
+}
+.content-table tr:hover {
+    background-color: #333;
+}
+.action-btn {
+    padding: 5px 10px;
+    background: #007bff;
+    color: white;
+    border-radius: 4px;
+    margin-right: 5px;
+    font-size: 12px;
+}
+.action-btn.edit { background: #E50914; }
+.action-btn.video { background: #00A388; }

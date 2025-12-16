@@ -1,0 +1,2 @@
+http://localhost/SecureStream/get_key.php
+video/enc.key

@@ -1,0 +1,379 @@
+/* --- RESET & BASE --- */
+* { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+body {
+    background-color: #1a1d29; /* Disney+ Dark Blue */
+    color: #f9f9f9;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    overflow-x: hidden; /* Hilangkan scroll horizontal window */
+}
+a { text-decoration: none; color: inherit; transition: 0.3s; }
+ul { list-style: none; }
+
+/* --- LAYOUT WRAPPER --- */
+.app-container {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* --- 1. SIDEBAR (NAVIGASI KIRI) --- */
+.sidebar {
+    width: 100px; /* Lebar Sidebar */
+    height: 100vh;
+    position: fixed;
+    top: 0; left: 0;
+    background: transparent; /* Bisa diganti #0e0b14 jika ingin solid */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 30px;
+    z-index: 1000;
+}
+
+/* Logo Atas */
+.sidebar-logo {
+    font-size: 24px;
+    color: #fff;
+    margin-bottom: 50px;
+}
+
+/* Menu Navigasi */
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 40px; /* Jarak antar ikon */
+    width: 100%;
+    align-items: center;
+}
+
+.nav-item {
+    color: #cecece;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+    opacity: 0.7;
+    cursor: pointer;
+}
+
+.nav-item i {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+.nav-item:hover, .nav-item.active {
+    color: #fff;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* --- 2. MAIN CONTENT (KANAN) --- */
+.main-content {
+    margin-left: 100px; /* Memberi ruang agar tidak tertutup sidebar */
+    width: calc(100% - 100px);
+    position: relative;
+    padding-bottom: 50px;
+}
+
+/* --- HERO SECTION (BANNER) --- */
+.hero {
+    position: relative;
+    height: 80vh;
+    background-size: cover;
+    background-position: center top;
+    display: flex;
+    align-items: center;
+    padding-left: 60px; /* Padding konten hero */
+}
+
+/* Gradasi Gelap agar tulisan terbaca */
+.hero-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to right, #1a1d29 10%, transparent 60%),
+                linear-gradient(to top, #1a1d29 5%, transparent 30%);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 10;
+    max-width: 600px;
+}
+
+.hero-title { font-size: 3.5rem; margin-bottom: 10px; line-height: 1.1; }
+.hero-meta { color: #ccc; font-weight: bold; margin-bottom: 20px; font-size: 14px; }
+.hero-desc { font-size: 1.1rem; line-height: 1.5; color: #ddd; margin-bottom: 30px; }
+
+/* Tombol */
+.btn-group { display: flex; gap: 15px; }
+.btn-hero {
+    border: none; padding: 12px 30px; border-radius: 4px;
+    font-size: 16px; font-weight: bold; cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+}
+.btn-play { background: #f9f9f9; color: #000; }
+.btn-play:hover { background: #cecece; }
+.btn-add { background: rgba(0,0,0,0.6); color: #fff; border: 1px solid white; }
+.btn-add:hover { background: rgba(255,255,255,0.1); }
+
+
+/* --- BRAND TILES (Kotak Kategori) --- */
+.brands-container {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+    padding: 20px 60px; /* Sejajar dengan padding hero */
+    margin-top: -50px; /* Overlap ke hero sedikit */
+    position: relative;
+    z-index: 20;
+}
+
+.brand-card {
+    background: linear-gradient(rgb(48, 50, 62), rgb(30, 31, 42));
+    border: 3px solid rgba(249, 249, 249, 0.1);
+    border-radius: 10px;
+    height: 100px; /* Tinggi kotak */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 20px 30px -10px rgba(0,0,0,0.7);
+    transition: all 0.25s;
+    cursor: pointer;
+    color: #aaa; font-weight: bold; /* Fallback text color */
+}
+
+.brand-card:hover {
+    transform: scale(1.05);
+    border-color: #f9f9f9;
+    box-shadow: 0 40px 58px -16px rgba(0,0,0,0.8);
+    color: white;
+}
+.brand-card img { max-width: 80%; max-height: 80%; object-fit: contain; }
+
+
+/* --- CONTENT ROWS (Slider Film) --- */
+.row-container { padding: 20px 0 10px 60px; }
+.row-title { font-size: 1.2rem; color: #ccc; margin-bottom: 15px; }
+.row-posters {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+.row-posters::-webkit-scrollbar { display: none; }
+
+.poster {
+    min-width: 220px;
+    height: 124px;
+    border-radius: 5px;
+    border: 3px solid transparent;
+    transition: 0.3s;
+    overflow: hidden;
+    position: relative;
+}
+.poster img { width: 100%; height: 100%; object-fit: cover; }
+.poster:hover {
+    transform: scale(1.1);
+    border-color: #f9f9f9;
+    z-index: 100;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+}
+
+/* --- CSS TAMBAHAN UNTUK DETAILS.PHP --- */
+
+/* Hero Detail (Banner Atas) */
+.detail-hero {
+    position: relative;
+    height: 70vh;
+    background-size: cover;
+    background-position: center;
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.detail-content {
+    padding: 0 60px;
+    margin-top: -100px; /* Naik ke atas menutupi pudar hero */
+    position: relative;
+    z-index: 10;
+}
+
+.detail-title { font-size: 3rem; margin-bottom: 10px; }
+.detail-meta { color: #ccc; font-size: 14px; margin-bottom: 20px; font-weight: bold; }
+.detail-desc { max-width: 700px; line-height: 1.6; color: #ddd; font-size: 16px; margin-bottom: 30px; }
+
+/* Tabs (Episodes / Suggested) */
+.detail-tabs {
+    display: flex; gap: 30px;
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+    margin-bottom: 30px;
+}
+.tab-item {
+    padding-bottom: 10px;
+    font-size: 18px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    color: #aaa;
+}
+.tab-item.active {
+    border-color: #f9f9f9;
+    color: #fff;
+}
+
+/* Episode List */
+.episode-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 800px;
+}
+
+.episode-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.episode-card:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
+    transform: scale(1.01);
+}
+
+.ep-number { font-size: 24px; color: #aaa; font-weight: bold; width:45px;}
+.ep-thumb { 
+    width: 150px; height: 85px; 
+    background: #333; border-radius: 4px; overflow: hidden;
+    position: relative;
+}
+.ep-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ep-info { flex: 1; }
+.ep-title { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+.ep-duration { font-size: 12px; color: #aaa; }
+.play-icon-overlay {
+    position: absolute; top:0; left:0; right:0; bottom:0;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(0,0,0,0.5); opacity: 0; transition: 0.3s;
+}
+.episode-card:hover .play-icon-overlay { opacity: 1; }
+
+/* --- TAMPILAN GRID (Untuk Halaman Kategori) --- */
+.page-title {
+    font-size: 2rem;
+    margin: 20px 0 20px 60px; /* Padding kiri menyesuaikan hero */
+    color: #fff;
+}
+
+.grid-container {
+    display: grid;
+    /* Membuat kolom otomatis mengisi lebar layar (Responsive) */
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    padding: 0 60px 60px 60px;
+}
+
+.grid-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: 0.3s;
+    border: 3px solid transparent;
+    cursor: pointer;
+    aspect-ratio: 16/9; /* Rasio Landscape */
+}
+
+.grid-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.grid-item:hover {
+    transform: scale(1.05);
+    border-color: #f9f9f9;
+    z-index: 10;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+}
+
+/* Profil Sederhana */
+.profile-container {
+    padding: 100px;
+    text-align: center;
+}
+.profile-avatar {
+    width: 150px; height: 150px;
+    background: #333; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 60px; color: #aaa; margin: 0 auto 20px;
+}
+
+/* --- CSS GLOBAL SLIDESHOW (Tambahkan di style.css) --- */
+
+/* Container Banner */
+.hero-slider {
+    position: relative;
+    height: 70vh; /* Tinggi Banner di halaman kategori sedikit lebih pendek dari Home */
+    width: 100%;
+    overflow: hidden;
+    background: #000;
+    margin-bottom: 20px;
+}
+
+/* Slide Item */
+.hero-slide {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center top;
+    opacity: 0; /* Default sembunyi */
+    transition: opacity 1s ease-in-out;
+    z-index: 1;
+}
+
+.hero-slide.active { opacity: 1; z-index: 2; }
+
+.hero-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to right, #1a1d29 10%, transparent 60%),
+                linear-gradient(to top, #1a1d29 5%, transparent 30%);
+}
+
+.hero-content {
+    position: relative; z-index: 10;
+    max-width: 600px; padding-left: 60px; 
+    display: flex; flex-direction: column; justify-content: center;
+    height: 100%;
+}
+
+.hero-title {
+    font-size: 3rem; margin-bottom: 10px; line-height: 1.1;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.hero-meta {
+    color: #ccc; font-weight: bold; margin-bottom: 20px; font-size: 14px;
+    display: flex; align-items: center; gap: 10px;
+}
+
+.hero-desc {
+    font-size: 1.1rem; line-height: 1.5; color: #ddd; margin-bottom: 30px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Dots */
+.slider-dots {
+    position: absolute; bottom: 30px; right: 60px;
+    z-index: 20; display: flex; gap: 10px;
+}
+.dot {
+    width: 8px; height: 8px; background: rgba(255,255,255,0.5);
+    border-radius: 50%; cursor: pointer; transition: 0.3s;
+}
+.dot.active { background: #fff; transform: scale(1.3); }
