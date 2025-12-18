@@ -24,7 +24,7 @@ if(isset($_POST['query']) || isset($_POST['genre'])) {
     if(mysqli_num_rows($result) > 0) {
         echo '<div class="grid-container">';
         while($row = mysqli_fetch_assoc($result)) {
-            $link = ($row['type'] == 'series') ? "details.php?id=".$row['id'] : "watch.php?c_id=".$row['id'];
+            $link = ($row['type'] == 'series') ? "details.php?id=".$row['id'] : "watch.php?v=".$hasher->encode($row['id']);
             echo '
             <a href="'.$link.'" class="grid-item animate-in">
                 <img src="'.$row['poster_landscape'].'">

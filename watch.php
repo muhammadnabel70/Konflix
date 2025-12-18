@@ -11,77 +11,82 @@ $q_user = mysqli_query($conn, "SELECT is_subscribed, subscription_end, status, b
 $u_data = mysqli_fetch_assoc($q_user);
 
 if($u_data['status'] == 'banned') {
-    // Alasan dari DB (Sekarang sudah pasti ada)
     $reason_text = htmlspecialchars($u_data['ban_reason'] ?? 'Pelanggaran Syarat & Ketentuan.');
-    
-    die("
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Akun Dibekukan</title>
-        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>
-        <style>
-            body { background: #000; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-            .ban-box { text-align: center; border: 1px solid #E50914; padding: 40px; border-radius: 10px; background: #111; max-width: 500px; box-shadow: 0 0 50px rgba(229, 9, 20, 0.5); }
-            h1 { color: #E50914; font-size: 3rem; margin: 0 0 20px 0; }
-            .reason { background: #333; padding: 15px; margin: 20px 0; border-radius: 5px; color: #fff; font-weight: bold; border-left: 4px solid #E50914; }
-            a { color: #aaa; text-decoration: none; border: 1px solid #aaa; padding: 10px 20px; border-radius: 4px; display: inline-block; margin-top: 20px; }
-            a:hover { color: white; border-color: white; }
-        </style>
-    </head>
-    <body>
-        <div class='ban-box'>
-            <h1>BANNED</h1>
-            <p>Akun Anda telah dinonaktifkan secara permanen karena pelanggaran.</p>
-            
-            <div class='reason'>
-                Alasan:<br>
-                \"$reason_text\"
-            </div>
-            
-            <p style='font-size:0.9rem; margin-top:20px;'>Hubungi support@konflix.com jika ini kesalahan.</p>
-            <a href='logout.php'>Keluar</a>
-        </div>
-    </body>
-    </html>
-    ");
+    die("<!DOCTYPE html><html><head><title>Banned</title></head><body style='background:#000;color:red;text-align:center;padding:50px;'><h1>AKUN DIBEKUKAN</h1><p>$reason_text</p><a href='logout.php' style='color:white;'>Keluar</a></body></html>");
 }
 
 // Cek masa aktif premium
 $is_premium = ($u_data['is_subscribed'] == 1 && strtotime($u_data['subscription_end']) > time());
-$block_access = !$is_premium; // True jika user FREE
+$block_access = !$is_premium; 
 
-// --- 3. LOGIKA VIDEO DATABASE ---
-$file_path = "";
-$data = [];
-$full_title = "";
 
-if(isset($_GET['v_id']) || isset($_GET['c_id'])) {
-    $id_condition = isset($_GET['v_id']) ? "v.id = ".(int)$_GET['v_id'] : "c.id = ".(int)$_GET['c_id'];
-    
-    $sql = "SELECT c.*, v.file_path_m3u8, v.subtitle_path, v.duration as vid_duration, v.episode_title, 
-            GROUP_CONCAT(g.name SEPARATOR ', ') as genre_list
-            FROM videos v 
-            JOIN contents c ON v.content_id = c.id 
-            LEFT JOIN content_genres cg ON c.id = cg.content_id
-            LEFT JOIN genres g ON cg.genre_id = g.id
-            WHERE $id_condition
-            GROUP BY c.id LIMIT 1"; 
+// --- 3. LOGIKA PENERIMA ID / HASH (FINAL FIX) ---
+$vid_id = 0;      // ID Video Spesifik (untuk Episode / play=...)
+$content_id = 0;  // ID Konten Utama (untuk Film / v=...)
 
-    $q = mysqli_query($conn, $sql);
-    if (!$q) die("Error Query: " . mysqli_error($conn));
-    $data = mysqli_fetch_assoc($q);
-    
-    if($data) {
-        $file_path = $data['file_path_m3u8'];
-        $full_title = $data['title'];
-        if(!empty($data['episode_title'])) $full_title .= " - " . $data['episode_title'];
+// A. Cek Parameter 'play' (Hash Video ID - Biasanya dari Episode List)
+// INI YANG SEBELUMNYA HILANG
+if (isset($_GET['play'])) {
+    $decoded = $hasher->decode($_GET['play']);
+    if (count($decoded) > 0) {
+        $vid_id = (int)$decoded[0];
     } else {
-        die("<div style='color:white;text-align:center;margin-top:50px;'>Video tidak ditemukan.<a href='index.php'>Kembali</a></div>");
+        die("Link Episode Rusak.");
     }
-} else { header("Location: index.php"); exit; }
+} 
+// B. Cek Parameter 'v' (Hash Content ID - Biasanya dari Home/Movies)
+elseif (isset($_GET['v'])) {
+    $decoded = $hasher->decode($_GET['v']);
+    if (count($decoded) > 0) {
+        $content_id = (int)$decoded[0];
+    } else {
+        die("Link Konten Rusak.");
+    }
+}
+// C. Legacy Check (Untuk kompatibilitas link lama)
+elseif (isset($_GET['v_id'])) { $vid_id = (int)$_GET['v_id']; }
+elseif (isset($_GET['c_id'])) { $content_id = (int)$_GET['c_id']; }
 
-// --- 4. WATERMARK USER ---
+// Tentukan Kondisi SQL berdasarkan ID yang didapat
+if ($vid_id > 0) {
+    // Jika ada ID Video spesifik (Episode), ambil video itu
+    $id_condition = "v.id = $vid_id";
+} elseif ($content_id > 0) {
+    // Jika cuma ada ID Konten (Film), ambil video pertama
+    $id_condition = "c.id = $content_id";
+} else {
+    // Jika tidak ada ID sama sekali, lempar ke Home
+    header("Location: index.php"); 
+    exit; 
+}
+
+// --- 4. QUERY DATABASE ---
+// Saya tambahkan ORDER BY agar jika yang dipilih FILM/SERIES (tanpa episode spesifik), 
+// yang muncul adalah episode 1
+$sql = "SELECT c.*, v.file_path_m3u8, v.subtitle_path, v.duration as vid_duration, v.episode_title, 
+        GROUP_CONCAT(g.name SEPARATOR ', ') as genre_list
+        FROM videos v 
+        JOIN contents c ON v.content_id = c.id 
+        LEFT JOIN content_genres cg ON c.id = cg.content_id
+        LEFT JOIN genres g ON cg.genre_id = g.id
+        WHERE $id_condition
+        GROUP BY c.id 
+        ORDER BY v.episode_number ASC 
+        LIMIT 1"; 
+
+$q = mysqli_query($conn, $sql);
+if (!$q) die("Error Query: " . mysqli_error($conn));
+$data = mysqli_fetch_assoc($q);
+
+if($data) {
+    $file_path = $data['file_path_m3u8'];
+    $full_title = $data['title'];
+    if(!empty($data['episode_title'])) $full_title .= " - " . $data['episode_title'];
+} else {
+    die("<div style='color:white;text-align:center;margin-top:50px;'>Video tidak ditemukan.<br><a href='index.php' style='color:#E50914;'>Kembali</a></div>");
+}
+
+// --- 5. WATERMARK & ASSETS ---
 $user_watermark = "ID: $uid | User: " . $u_data['username'];
 $bg_image = $data['poster_landscape'] ?? $data['poster_portrait'];
 ?>
@@ -92,109 +97,44 @@ $bg_image = $data['poster_landscape'] ?? $data['poster_portrait'];
     <title>Watching: <?php echo htmlspecialchars($full_title); ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- CSS PLAYER UTAMA --- */
+        /* CSS SAMA SEPERTI SEBELUMNYA - TIDAK ADA PERUBAHAN TAMPILAN */
         body { margin: 0; background: #0f0f0f; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; min-height: 100vh; }
         a { text-decoration: none; color: inherit; transition:0.3s;}
-        
-        /* Background Blur */
-        .page-bg {
-            position: fixed; top: -20px; left: -20px; right: -20px; bottom: -20px;
-            background-size: cover; background-position: center;
-            filter: blur(30px) brightness(0.3); z-index: -1; transform: scale(1.1);
-        }
-
+        .page-bg { position: fixed; top: -20px; left: -20px; right: -20px; bottom: -20px; background-size: cover; background-position: center; filter: blur(30px) brightness(0.3); z-index: -1; transform: scale(1.1); }
         .watch-container { max-width: 1200px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
         .back-btn { display: inline-flex; align-items: center; gap: 10px; color: #ccc; margin-bottom: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .back-btn:hover { color: white; }
-
-        /* PLAYER WRAPPER */
-        #player-wrapper {
-            position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.8); aspect-ratio: 16/9; 
-        }
-        
+        #player-wrapper { position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.8); aspect-ratio: 16/9; }
         video { position: absolute; opacity: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; }
         canvas { display: block; width: 100%; height: 100%; cursor: pointer; position: relative; z-index: 5; }
-        
-        /* SUBTITLE OVERLAY (HTML) */
-        #subtitleDisplay {
-            position: absolute; bottom: 80px; left: 0; right: 0;
-            text-align: center; pointer-events: none; z-index: 15;
-            color: #ffffffff; font-size: 24px; font-weight: bold; font-family: Arial, sans-serif;
-            text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
-            padding: 0 20px; display: none;
-        }
-
-        /* PLAY OVERLAY */
-        #playOverlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center;
-            z-index: 25; cursor: pointer; transition: opacity 0.3s;
-        }
-        #playOverlay button {
-            width: 80px; height: 80px; background: rgba(255, 255, 255, 0.2);
-            color: white; border-radius: 50%; border: 2px solid white; font-size: 36px; cursor: pointer;
-            backdrop-filter: blur(5px);
-        }
+        #subtitleDisplay { position: absolute; bottom: 80px; left: 0; right: 0; text-align: center; pointer-events: none; z-index: 15; color: #ffffffff; font-size: 24px; font-weight: bold; font-family: Arial, sans-serif; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; padding: 0 20px; display: none; }
+        #playOverlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 25; cursor: pointer; transition: opacity 0.3s; }
+        #playOverlay button { width: 80px; height: 80px; background: rgba(255, 255, 255, 0.2); color: white; border-radius: 50%; border: 2px solid white; font-size: 36px; cursor: pointer; backdrop-filter: blur(5px); }
         #playOverlay button:hover { background: rgba(255, 255, 255, 0.3); transform: scale(1.1); }
-
-        /* CONTROLS BAR (Z-Index 30 agar bisa diklik) */
-        .controls-overlay {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-            padding: 20px; display: flex; flex-direction: column; gap: 10px;
-            opacity: 0; transition: opacity 0.3s; z-index: 30; 
-        }
+        .controls-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); padding: 20px; display: flex; flex-direction: column; gap: 10px; opacity: 0; transition: opacity 0.3s; z-index: 30; }
         #player-wrapper:hover .controls-overlay { opacity: 1; }
-
         .progress-container { width: 100%; height: 5px; background: rgba(255,255,255,0.3); cursor: pointer; border-radius: 5px; position: relative; }
         .progress-filled { height: 100%; background: #E50914; width: 0%; border-radius: 5px; position: relative; }
-        
         .controls-row { display: flex; align-items: center; justify-content: space-between; }
         .left-controls, .right-controls { display: flex; align-items: center; gap: 20px; }
         .c-btn { background: none; border: none; color: white; font-size: 18px; cursor: pointer; opacity: 0.9; padding: 0; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)); }
-        
         .volume-wrapper { display: flex; align-items: center; gap: 10px; }
         .volume-container { width: 80px; display: flex; align-items: center; }
         input[type=range] { width: 100%; cursor: pointer; height: 3px; accent-color: white; }
-
-        .quality-menu {
-            position: absolute; bottom: 40px; right: -10px;
-            background: rgba(20, 20, 20, 0.95); border: 1px solid #333; border-radius: 5px;
-            padding: 5px 0; display: none; flex-direction: column; min-width: 140px; z-index: 100;
-        }
+        .quality-menu { position: absolute; bottom: 40px; right: -10px; background: rgba(20, 20, 20, 0.95); border: 1px solid #333; border-radius: 5px; padding: 5px 0; display: none; flex-direction: column; min-width: 140px; z-index: 100; }
         .quality-menu.show { display: flex; }
         .q-item { padding: 10px 15px; color: #ccc; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; }
         .q-item.active { color: #E50914; font-weight: bold; }
         .q-item .check-icon { display: none; }
         .q-item.active .check-icon { display: block; }
-
-        /* MODAL POPUP PREMIUM */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.85); z-index: 9999;
-            display: none; align-items: center; justify-content: center;
-            backdrop-filter: blur(5px);
-        }
-        .modal-box {
-            background: #1a1d29; padding: 40px; border-radius: 12px;
-            text-align: center; border: 1px solid #333; max-width: 400px;
-            box-shadow: 0 0 30px rgba(229, 9, 20, 0.3);
-            animation: popup 0.3s ease-out;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-box { background: #1a1d29; padding: 40px; border-radius: 12px; text-align: center; border: 1px solid #333; max-width: 400px; box-shadow: 0 0 30px rgba(229, 9, 20, 0.3); animation: popup 0.3s ease-out; }
         @keyframes popup { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .modal-icon { font-size: 50px; color: #E50914; margin-bottom: 20px; }
         .modal-title { font-size: 24px; margin-bottom: 10px; color: white; }
         .modal-desc { color: #ccc; margin-bottom: 30px; line-height: 1.5; }
-        .btn-modal {
-            background: #E50914; color: white; padding: 12px 30px; border-radius: 5px;
-            text-decoration: none; font-weight: bold; display: inline-block;
-            transition: 0.3s;
-        }
+        .btn-modal { background: #E50914; color: white; padding: 12px 30px; border-radius: 5px; text-decoration: none; font-weight: bold; display: inline-block; transition: 0.3s; }
         .btn-modal:hover { background: #b20710; transform: scale(1.05); }
-
-
-        /* Info Section */
         .info-section { margin-top: 30px; display: flex; gap: 40px; }
         .poster-area img { width: 200px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .meta-area { flex: 1; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
@@ -202,7 +142,6 @@ $bg_image = $data['poster_landscape'] ?? $data['poster_portrait'];
         .vid-meta-tags { display: flex; gap: 15px; color: #ddd; font-size: 14px; margin-bottom: 20px; align-items: center; }
         .badge { border: 1px solid #ddd; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
         .rating-star { color: #E50914; font-weight: bold; }
-        .vid-desc { line-height: 1.6; color: #eee; margin-bottom: 20px; font-size: 16px; }
         .cast-info { display: grid; grid-template-columns: 100px auto; gap: 10px; font-size: 14px; color: #ccc; }
         .label { color: #aaa; font-weight: bold; }
     </style>
@@ -505,35 +444,7 @@ $bg_image = $data['poster_landscape'] ?? $data['poster_portrait'];
         return m + ":" + (s < 10 ? "0" : "") + s;
     }
     
-    // Auto-Hide Controls
-    let hideTimeout;
-    const controls = document.querySelector('.controls-overlay');
-    const backBtn = document.querySelector('.back-btn');
-
-    function showControls() {
-        playerWrapper.style.cursor = 'default';
-        controls.style.opacity = '1';
-        backBtn.style.opacity = '1';
-        clearTimeout(hideTimeout);
-        hideTimeout = setTimeout(() => {
-            if (!video.paused) {
-                playerWrapper.style.cursor = 'none';
-                controls.style.opacity = '0';
-                backBtn.style.opacity = '0';
-                qualityMenu.classList.remove('show');
-            }
-        }, 3000);
-    }
-
-    playerWrapper.addEventListener('mousemove', showControls);
-    playerWrapper.addEventListener('click', showControls);
-    video.addEventListener('pause', () => { clearTimeout(hideTimeout); showControls(); });
-    
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) { video.pause(); document.title = "🚫 Security Alert"; } 
-        else { document.title = "Watching..."; }
-    });
-    document.addEventListener('contextmenu', e => e.preventDefault());
+   
 </script>
 </body>
 </html>

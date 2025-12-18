@@ -1,0 +1,4 @@
+video/
+*.ts
+*.m3u8
+.envgit

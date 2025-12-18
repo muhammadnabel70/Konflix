@@ -37,7 +37,7 @@ $q_series = mysqli_query($conn, "SELECT * FROM contents WHERE type='series' ORDE
                         </div>
                         <p class="hero-desc"><?php echo substr($item['description'], 0, 180); ?>...</p>
                         <div class="btn-group">
-                            <a href="details.php?id=<?php echo $item['id']; ?>" class="btn-hero btn-play"><i class="fa-solid fa-circle-info"></i> EPISODE</a>
+                            <a href="details.php?v=<?php echo $hasher->encode($item['id']); ?>" class="btn-hero btn-play"><i class="fa-solid fa-circle-info"></i> EPISODE</a>
                             <button class="btn-hero btn-add"><i class="fa-solid fa-plus"></i></button>
                         </div>
                     </div>
@@ -54,7 +54,7 @@ $q_series = mysqli_query($conn, "SELECT * FROM contents WHERE type='series' ORDE
         <h1 class="page-title">TV Series</h1>
         <div class="grid-container">
             <?php while($row = mysqli_fetch_assoc($q_series)): ?>
-                <a href="details.php?id=<?php echo $row['id']; ?>" class="grid-item">
+                <a href="details.php?v=<?php echo $hasher->encode($row['id']); ?>" class="grid-item">
                     <img src="<?php echo $row['poster_landscape']; ?>">
                 </a>
             <?php endwhile; ?>

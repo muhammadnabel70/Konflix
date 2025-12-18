@@ -37,7 +37,7 @@ $q_movies = mysqli_query($conn, "SELECT * FROM contents WHERE type='movie' ORDER
                         </div>
                         <p class="hero-desc"><?php echo substr($item['description'], 0, 180); ?>...</p>
                         <div class="btn-group">
-                            <a href="watch.php?c_id=<?php echo $item['id']; ?>" class="btn-hero btn-play"><i class="fa-solid fa-play"></i> PUTAR</a>
+                            <a href="watch.php?v=<?php echo $hasher->encode($row['id']); ?>" class="btn-hero btn-play"><i class="fa-solid fa-play"></i> PUTAR</a>
                             <button class="btn-hero btn-add"><i class="fa-solid fa-plus"></i></button>
                         </div>
                     </div>
@@ -54,7 +54,7 @@ $q_movies = mysqli_query($conn, "SELECT * FROM contents WHERE type='movie' ORDER
         <h1 class="page-title">Semua Film</h1>
         <div class="grid-container">
             <?php while($row = mysqli_fetch_assoc($q_movies)): ?>
-                <a href="watch.php?c_id=<?php echo $row['id']; ?>" class="grid-item">
+                <a href="watch.php?v=<?php echo $hasher->encode($row['id']); ?>" class="grid-item">
                     <img src="<?php echo $row['poster_landscape']; ?>">
                 </a>
             <?php endwhile; ?>

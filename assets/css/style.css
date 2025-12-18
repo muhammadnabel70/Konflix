@@ -377,3 +377,4 @@ ul { list-style: none; }
     border-radius: 50%; cursor: pointer; transition: 0.3s;
 }
 .dot.active { background: #fff; transform: scale(1.3); }
+

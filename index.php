@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'includes/db.php';
+include 'includes/db.php'; // Pastikan di sini sudah ada inisialisasi $hasher
 $current_page = 'home'; 
 
 // --- QUERY DATA ---
@@ -124,10 +124,14 @@ $q_sports = mysqli_query($conn, "SELECT * FROM contents WHERE type='sport' ORDER
                     // Tentukan class active untuk slide pertama
                     $activeClass = ($index == 0) ? 'active' : ''; 
                     
-                    // Tentukan link (Series ke Detail, Lainnya ke Watch)
+                    // --- SECURITY: ENCODE ID UNTUK TOMBOL PUTAR ---
+                    $encoded_id = $hasher->encode($item['id']);
+
+                    // Tentukan link (Series ke Details, Lainnya ke Watch)
+                    // Perhatikan parameter sekarang menggunakan 'v='
                     $playLink = ($item['type'] == 'series') 
-                                ? "details.php?id=" . $item['id'] 
-                                : "watch.php?c_id=" . $item['id'];
+                                ? "details.php?v=" . $encoded_id 
+                                : "watch.php?v=" . $encoded_id;
                 ?>
                 
                 <div class="hero-slide <?php echo $activeClass; ?>" style="background-image: url('<?php echo $item['poster_landscape']; ?>');">
@@ -168,7 +172,7 @@ $q_sports = mysqli_query($conn, "SELECT * FROM contents WHERE type='sport' ORDER
             <h3 class="row-title">Film Terbaru</h3>
             <div class="row-posters">
                 <?php while($row = mysqli_fetch_assoc($q_movies)): ?>
-                    <a href="watch.php?c_id=<?php echo $row['id']; ?>" class="poster">
+                    <a href="watch.php?v=<?php echo $hasher->encode($row['id']); ?>" class="poster">
                         <img src="<?php echo $row['poster_landscape']; ?>" alt="<?php echo $row['title']; ?>">
                     </a>
                 <?php endwhile; ?>
@@ -179,7 +183,7 @@ $q_sports = mysqli_query($conn, "SELECT * FROM contents WHERE type='sport' ORDER
             <h3 class="row-title">Serial Trending</h3>
             <div class="row-posters">
                 <?php while($row = mysqli_fetch_assoc($q_series)): ?>
-                    <a href="details.php?id=<?php echo $row['id']; ?>" class="poster">
+                    <a href="details.php?v=<?php echo $hasher->encode($row['id']); ?>" class="poster">
                         <img src="<?php echo $row['poster_landscape']; ?>" alt="<?php echo $row['title']; ?>">
                     </a>
                 <?php endwhile; ?>
@@ -190,14 +194,15 @@ $q_sports = mysqli_query($conn, "SELECT * FROM contents WHERE type='sport' ORDER
             <h3 class="row-title">Olahraga</h3>
             <div class="row-posters">
                 <?php while($row = mysqli_fetch_assoc($q_sports)): ?>
-                    <a href="watch.php?c_id=<?php echo $row['id']; ?>" class="poster">
+                    <a href="watch.php?v=<?php echo $hasher->encode($row['id']); ?>" class="poster">
                         <img src="<?php echo $row['poster_landscape']; ?>" alt="<?php echo $row['title']; ?>">
                     </a>
                 <?php endwhile; ?>
             </div>
         </div>
 
-    </div> </div>
+    </div> 
+</div>
 
 <script>
     let currentSlide = 0;
